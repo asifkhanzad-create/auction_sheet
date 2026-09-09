@@ -202,9 +202,23 @@ class _ChatPanelState extends State<ChatPanel> {
                       fillColor: context.fieldFill,
                       contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 12),
+                      // Explicitly set border for every state — leaving
+                      // enabledBorder/focusedBorder unset lets Material 3
+                      // fall back to ColorScheme.outline (auto-generated
+                      // from the purple seed color), which renders much
+                      // darker than intended. Setting all three keeps the
+                      // border consistently light grey in both themes.
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none,
+                        borderSide: BorderSide(color: context.border, width: 1),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide(color: context.border, width: 1),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide(color: AppColors.purple, width: 1.6),
                       ),
                     ),
                     onSubmitted: (_) => _send(),
