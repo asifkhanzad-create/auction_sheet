@@ -2,19 +2,6 @@
 <html>
 <head>
   <meta name="google-signin-client_id" content="122741019764-pqvtnhcrficnia4nrom1c66vmn1n7807.apps.googleusercontent.com">
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
@@ -32,16 +19,52 @@
 
   <title>auction_sheet</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    #loading-spinner {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #FAFAFC;
+      font-family: sans-serif;
+      color: #6C63FF;
+      flex-direction: column;
+      gap: 12px;
+    }
+    #loading-spinner .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid #E0E0E8;
+      border-top-color: #6C63FF;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
+  <!-- Shown immediately while Flutter's JS bundle downloads, so a slow
+       or briefly-stuck load looks like "loading" rather than a dead
+       blank screen. Removed automatically once Flutter takes over. -->
+  <div id="loading-spinner">
+    <div class="spinner"></div>
+    <span>Loading admin panel…</span>
+  </div>
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
+  <script>
+    // Disable the Flutter service worker entirely. This is a low-traffic
+    // internal admin tool, so always loading fresh from the network is
+    // preferable to risking a stale cached build silently hanging after
+    // a redeploy (a known cause of intermittent blank-white-screen loads
+    // on Flutter Web).
+    window.flutterConfiguration = {
+      serviceWorkerVersion: null,
+    };
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
