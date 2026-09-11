@@ -9,10 +9,19 @@ import '../widgets/report_panel.dart';
 
 /// The waiting/status + chat view for a single request.
 /// Opened right after submitting a new request, or from "My Requests" history.
-class RequestDetailScreen extends StatelessWidget {
+class RequestDetailScreen extends StatefulWidget {
   final String chassisNumber;
 
   const RequestDetailScreen({super.key, required this.chassisNumber});
+
+  @override
+  State<RequestDetailScreen> createState() => _RequestDetailScreenState();
+}
+
+class _RequestDetailScreenState extends State<RequestDetailScreen> {
+  // Bumped to force the status StreamBuilder to re-subscribe on retry —
+  // Firestore streams close permanently on error rather than re-emitting.
+  int _retryKey = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +32,7 @@ class RequestDetailScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          chassisNumber,
+          widget.chassisNumber,
           style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w600),
         ),
       ),
@@ -39,11 +48,39 @@ class RequestDetailScreen extends StatelessWidget {
               child: keyboardVisible
                   ? const SizedBox(width: double.infinity, height: 0)
                   : StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                      stream: FirestoreService.statusStream(chassisNumber),
+                      key: ValueKey(_retryKey),
+                      stream: FirestoreService.statusStream(widget.chassisNumber),
                       builder: (context, snapshot) {
+                        if (snapshot.hasError) {
+                          return Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(20),
+                            color: context.card,
+                            child: Column(
+                              children: [
+                                Text(
+                                  'Couldn\'t load the status for this request.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                      fontSize: 13, color: context.textSecondary),
+                                ),
+                                const SizedBox(height: 10),
+                                OutlinedButton.icon(
+                                  onPressed: () => setState(() => _retryKey++),
+                                  icon: const Icon(Icons.refresh_rounded, size: 16),
+                                  label: const Text('Retry'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColors.purple,
+                                    side: const BorderSide(color: AppColors.purple),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+
                         final data = snapshot.data?.data();
                         final status = data?['status'] ?? 'pending';
-                        final isCompleted = status == 'completed';
 
                         final rawDeliverables =
                             data?['deliverables'] as List<dynamic>?;
@@ -53,49 +90,34 @@ class RequestDetailScreen extends StatelessWidget {
                                 .toList() ??
                             [];
 
-                        return Column(
-                          children: [
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-                              decoration: BoxDecoration(
-                                color: context.card,
-                                border: Border(
-                                  bottom: BorderSide(color: context.border, width: 1),
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                  RequestStepTracker(status: status),
-                                  const SizedBox(height: 14),
-                                  Text(
-                                    isCompleted
-                                        ? 'Your auction sheet is ready!'
-                                        : status == 'in_progress'
-                                            ? 'We\'re actively sourcing your auction sheet.'
-                                            : 'Your request has been received.',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                      color: context.textPrimary,
+                        final createdAtTs = data?['createdAt'] as Timestamp?;
+
+                        return ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxHeight: MediaQuery.of(context).size.height * 0.55,
+                          ),
+                          child: SingleChildScrollView(
+                            child: Column(
+                              children: [
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                                  decoration: BoxDecoration(
+                                    color: context.card,
+                                    border: Border(
+                                      bottom: BorderSide(color: context.border, width: 1),
                                     ),
                                   ),
-                                  if (!isCompleted) ...[
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'This can take 10–30 minutes. Track it live below.',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                          fontSize: 12, color: context.textSecondary),
-                                    ),
-                                  ],
-                                ],
-                              ),
+                                  child: RequestStepTracker(
+                                    status: status,
+                                    createdAt: createdAtTs?.toDate(),
+                                  ),
+                                ),
+                                if (deliverables.isNotEmpty)
+                                  ReportPanel(deliverables: deliverables),
+                              ],
                             ),
-                            if (deliverables.isNotEmpty)
-                              ReportPanel(deliverables: deliverables),
-                          ],
+                          ),
                         );
                       },
                     ),
@@ -103,7 +125,7 @@ class RequestDetailScreen extends StatelessWidget {
             const Divider(height: 1),
             Expanded(
               child: ChatPanel(
-                chassisNumber: chassisNumber,
+                chassisNumber: widget.chassisNumber,
                 userId: AppUser.uid ?? 'unknown',
               ),
             ),

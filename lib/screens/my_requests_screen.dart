@@ -4,6 +4,7 @@ import 'package:lottie/lottie.dart';
 import '../services/app_auth_service.dart';
 import '../services/firestore_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/stream_error_view.dart';
 import 'request_detail_screen.dart';
 
 class MyRequestsScreen extends StatefulWidget {
@@ -23,6 +24,10 @@ class MyRequestsScreen extends StatefulWidget {
 class _MyRequestsScreenState extends State<MyRequestsScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _lottieController;
+  // Bumped to force the StreamBuilder to re-subscribe on retry — Firestore
+  // streams close permanently on error rather than re-emitting, so simply
+  // waiting doesn't recover; a fresh subscription is needed.
+  int _retryKey = 0;
 
   @override
   void initState() {
@@ -67,8 +72,15 @@ class _MyRequestsScreenState extends State<MyRequestsScreen>
       body: userId == null
           ? const Center(child: Text('Not signed in.'))
           : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              key: ValueKey(_retryKey),
               stream: FirestoreService.myRequestsStream(userId),
               builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return StreamErrorView(
+                    message: 'Couldn\'t load your requests.',
+                    onRetry: () => setState(() => _retryKey++),
+                  );
+                }
                 if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
                 }

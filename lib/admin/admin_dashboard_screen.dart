@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/firestore_service.dart';
+import '../widgets/stream_error_view.dart';
 import 'admin_auth_service.dart';
 import 'admin_chat_screen.dart';
 
@@ -18,6 +19,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
 
   bool _selectionMode = false;
   final Set<String> _selectedChassis = {};
+  // Bumped to force the requests StreamBuilder to re-subscribe on retry —
+  // Firestore streams close permanently on error rather than re-emitting.
+  int _retryKey = 0;
 
   @override
   void initState() {
@@ -147,17 +151,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                 ),
                 const SizedBox(width: 8),
               ],
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: const Color(0xFF6C63FF),
-          unselectedLabelColor: Colors.black45,
-          indicatorColor: const Color(0xFF6C63FF),
-          tabs: const [
-            Tab(text: 'Pending'),
-            Tab(text: 'Completed'),
-            Tab(text: 'All'),
-          ],
-        ),
       ),
       body: Column(
         children: [
@@ -182,26 +175,107 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
             ),
           Expanded(
             child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              key: ValueKey(_retryKey),
               stream: FirestoreService.allRequestsStream(),
               builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return StreamErrorView(
+                    message: 'Couldn\'t load requests.',
+                    onRetry: () => setState(() => _retryKey++),
+                  );
+                }
                 if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
                 }
                 var docs = snapshot.data!.docs;
 
-                return TabBarView(
-                  controller: _tabController,
+                bool _isUnread(Map<String, dynamic> data) {
+                  final lastCustomerMsg =
+                      (data['lastCustomerMessageAt'] as Timestamp?)?.toDate();
+                  final lastAdminRead =
+                      (data['lastAdminReadAt'] as Timestamp?)?.toDate();
+                  return lastCustomerMsg != null &&
+                      (lastAdminRead == null ||
+                          lastCustomerMsg.isAfter(lastAdminRead));
+                }
+
+                final pendingUnreadCount = docs.where((doc) {
+                  final data = doc.data();
+                  final status = data['status'] ?? 'pending';
+                  if (status != 'pending' && status != 'in_progress') return false;
+                  return _isUnread(data);
+                }).length;
+
+                final completedUnreadCount = docs.where((doc) {
+                  final data = doc.data();
+                  if ((data['status'] ?? 'pending') != 'completed') return false;
+                  return _isUnread(data);
+                }).length;
+
+                final allUnreadCount =
+                    docs.where((doc) => _isUnread(doc.data())).length;
+
+                return Column(
                   children: [
-                    // "Pending" tab now includes both fresh requests and ones
-                    // actively being sourced — only fully completed ones move out.
-                    _buildList(docs, filterStatuses: const ['pending', 'in_progress']),
-                    _buildList(docs, filterStatuses: const ['completed']),
-                    _buildList(docs, filterStatuses: null),
+                    TabBar(
+                      controller: _tabController,
+                      labelColor: const Color(0xFF6C63FF),
+                      unselectedLabelColor: Colors.black45,
+                      indicatorColor: const Color(0xFF6C63FF),
+                      tabs: [
+                        _tabWithBadge('Pending', pendingUnreadCount),
+                        _tabWithBadge('Completed', completedUnreadCount),
+                        _tabWithBadge('All', allUnreadCount),
+                      ],
+                    ),
+                    Expanded(
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          // "Pending" tab now includes both fresh requests and ones
+                          // actively being sourced — only fully completed ones move out.
+                          _buildList(docs, filterStatuses: const ['pending', 'in_progress']),
+                          _buildList(docs, filterStatuses: const ['completed']),
+                          _buildList(docs, filterStatuses: null),
+                        ],
+                      ),
+                    ),
                   ],
                 );
               },
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tabWithBadge(String label, int unreadCount) {
+    return Tab(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label),
+          if (unreadCount > 0) ...[
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+              decoration: const BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+              ),
+              constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+              child: Text(
+                '$unreadCount',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -271,6 +345,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
               final isCompleted = status == 'completed';
               final isSelected = _selectedChassis.contains(chassis);
 
+              // Unread if the customer's last message is newer than the
+              // admin's last read time (or the admin has never opened it).
+              final lastCustomerMsg =
+                  (data['lastCustomerMessageAt'] as Timestamp?)?.toDate();
+              final lastAdminRead =
+                  (data['lastAdminReadAt'] as Timestamp?)?.toDate();
+              final isUnread = lastCustomerMsg != null &&
+                  (lastAdminRead == null || lastCustomerMsg.isAfter(lastAdminRead));
+
               // Per-status visuals
               final Color badgeBg;
               final Color badgeFg;
@@ -316,9 +399,28 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                           activeColor: const Color(0xFF6C63FF),
                           onChanged: (_) => _toggleSelection(chassis),
                         )
-                      : CircleAvatar(
-                          backgroundColor: badgeBg,
-                          child: Icon(leadingIcon, color: badgeFg, size: 20),
+                      : Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: badgeBg,
+                              child: Icon(leadingIcon, color: badgeFg, size: 20),
+                            ),
+                            if (isUnread)
+                              Positioned(
+                                top: -1,
+                                right: -1,
+                                child: Container(
+                                  width: 12,
+                                  height: 12,
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white, width: 2),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                   title: Text(
                     chassis,

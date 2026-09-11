@@ -30,6 +30,14 @@ class AdminChatScreen extends StatefulWidget {
 class _AdminChatScreenState extends State<AdminChatScreen> {
   bool _uploadingReport = false;
 
+  @override
+  void initState() {
+    super.initState();
+    // Clears this request's unread indicator on the dashboard as soon as
+    // the admin opens the chat.
+    FirestoreService.markReadByAdmin(widget.chassisNumber);
+  }
+
   Future<void> _markInProgress(BuildContext context) async {
     await FirestoreService.markInProgress(widget.chassisNumber);
     if (context.mounted) {

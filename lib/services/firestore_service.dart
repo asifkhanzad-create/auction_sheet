@@ -91,7 +91,10 @@ class FirestoreService {
         .snapshots();
   }
 
-  /// Sends a plain text message (unchanged behavior).
+  /// Sends a plain text message (unchanged behavior). Also stamps
+  /// lastCustomerMessageAt on the request doc when the customer sends —
+  /// used by the admin dashboard's unread-message indicator, avoiding an
+  /// extra subcollection query per row.
   static Future<void> sendMessage({
     required String chassisNumber,
     required String senderId,
@@ -107,6 +110,12 @@ class FirestoreService {
       'text': text,
       'timestamp': FieldValue.serverTimestamp(),
     });
+
+    if (senderId != 'admin') {
+      await _db.collection('requests').doc(chassisNumber).update({
+        'lastCustomerMessageAt': FieldValue.serverTimestamp(),
+      });
+    }
   }
 
   /// Adds a file to the request's official "deliverables" list — shown in the
@@ -131,6 +140,8 @@ class FirestoreService {
 
   /// Sends a file message (image or document) — used after a Cloudinary upload.
   /// [fileType] should be "image" or "file" (see CloudinaryUploadResult.displayType).
+  /// Also stamps lastCustomerMessageAt on the request doc when the customer
+  /// sends — used by the admin dashboard's unread-message indicator.
   static Future<void> sendFileMessage({
     required String chassisNumber,
     required String senderId,
@@ -149,6 +160,20 @@ class FirestoreService {
       'fileName': fileName,
       'fileType': fileType, // "image" | "file"
       'timestamp': FieldValue.serverTimestamp(),
+    });
+
+    if (senderId != 'admin') {
+      await _db.collection('requests').doc(chassisNumber).update({
+        'lastCustomerMessageAt': FieldValue.serverTimestamp(),
+      });
+    }
+  }
+
+  /// Marks a request's chat as read by the admin — called when the admin
+  /// opens AdminChatScreen. Clears the unread indicator on the dashboard.
+  static Future<void> markReadByAdmin(String chassisNumber) async {
+    await _db.collection('requests').doc(chassisNumber).update({
+      'lastAdminReadAt': FieldValue.serverTimestamp(),
     });
   }
 }

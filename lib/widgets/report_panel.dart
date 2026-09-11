@@ -58,6 +58,17 @@ class ReportPanel extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.only(left: 22),
+            child: Text(
+              'Tap a file to open it',
+              style: TextStyle(
+                fontSize: 11.5,
+                color: context.textSecondary,
+              ),
+            ),
+          ),
           const SizedBox(height: 12),
           for (final pdf in pdfs) ...[
             _PdfCard(
@@ -194,7 +205,7 @@ class _PdfCardState extends State<_PdfCard> {
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: SizedBox(
-                height: 300,
+                height: 200,
                 width: double.infinity,
                 child: _loading
                     ? Container(

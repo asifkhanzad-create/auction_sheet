@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../services/firestore_service.dart';
 import '../services/cloudinary_service.dart';
 import '../theme/app_theme.dart';
+import 'stream_error_view.dart';
 
 class ChatPanel extends StatefulWidget {
   final String chassisNumber;
@@ -26,6 +27,9 @@ class _ChatPanelState extends State<ChatPanel> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
   bool _uploading = false;
+  // Bumped to force the chat StreamBuilder to re-subscribe on retry —
+  // Firestore streams close permanently on error rather than re-emitting.
+  int _retryKey = 0;
 
   @override
   void initState() {
@@ -42,15 +46,19 @@ class _ChatPanelState extends State<ChatPanel> {
     super.dispose();
   }
 
-  void _send() {
+  Future<void> _send() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
-    FirestoreService.sendMessage(
-      chassisNumber: widget.chassisNumber,
-      senderId: widget.userId,
-      text: text,
-    );
     _controller.clear();
+    try {
+      await FirestoreService.sendMessage(
+        chassisNumber: widget.chassisNumber,
+        senderId: widget.userId,
+        text: text,
+      );
+    } catch (e) {
+      _showError('Message failed to send: $e');
+    }
   }
 
   Future<void> _pickAndUploadFile() async {
@@ -110,8 +118,15 @@ class _ChatPanelState extends State<ChatPanel> {
       children: [
         Expanded(
           child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+            key: ValueKey(_retryKey),
             stream: FirestoreService.chatStream(widget.chassisNumber),
             builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return StreamErrorView(
+                  message: 'Couldn\'t load this conversation.',
+                  onRetry: () => setState(() => _retryKey++),
+                );
+              }
               if (!snapshot.hasData) {
                 return const SizedBox();
               }
