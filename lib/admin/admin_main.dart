@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../firebase_options.dart';
+import 'admin_theme.dart';
 import 'admin_auth_service.dart';
 import 'admin_login_screen.dart';
 import 'admin_dashboard_screen.dart';
@@ -22,15 +23,10 @@ class AdminApp extends StatelessWidget {
     return MaterialApp(
       title: 'Auction Sheet — Admin',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        fontFamily: 'Inter',
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6C63FF),
-          brightness: Brightness.light,
-        ),
-        scaffoldBackgroundColor: const Color(0xFFFAFAFC),
-      ),
+      // Admin panel follows the system brightness — no manual toggle.
+      // themeMode defaults to ThemeMode.system when both are set.
+      theme: AdminTheme.light(),
+      darkTheme: AdminTheme.dark(),
       home: const _AuthGate(),
     );
   }

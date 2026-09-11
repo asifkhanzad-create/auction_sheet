@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import '../services/firestore_service.dart';
 import '../services/cloudinary_service.dart';
+import 'admin_theme.dart';
 import '../widgets/chat_panel.dart';
 
 // Admin messages use this fixed senderId so they render distinctly
@@ -107,9 +108,9 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFC),
+      backgroundColor: context.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.card,
         elevation: 0,
         titleSpacing: 0,
         title: Column(
@@ -117,15 +118,15 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
           children: [
             Text(
               widget.chassisNumber,
-              style: const TextStyle(
-                color: Color(0xFF1A1A2E),
+              style: TextStyle(
+                color: context.textPrimary,
                 fontWeight: FontWeight.w600,
                 fontSize: 16,
               ),
             ),
             Text(
               widget.userName,
-              style: const TextStyle(color: Colors.black45, fontSize: 12),
+              style: TextStyle(color: context.textSecondary, fontSize: 12),
             ),
           ],
         ),
@@ -144,10 +145,10 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
               return Container(
                 width: double.infinity,
                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
+                decoration: BoxDecoration(
+                  color: context.card,
                   border: Border(
-                    bottom: BorderSide(color: Color(0xFFF0F0F5), width: 1),
+                    bottom: BorderSide(color: context.border, width: 1),
                   ),
                 ),
                 child: Column(
@@ -175,15 +176,15 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                             ),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: (isInProgress || isCompleted)
-                                  ? Colors.orange.shade700
-                                  : const Color(0xFF6C63FF),
+                                  ? Colors.orange.shade300
+                                  : AdminTheme.purple,
                               side: BorderSide(
                                 color: (isInProgress || isCompleted)
-                                    ? Colors.orange.shade200
-                                    : const Color(0xFF6C63FF).withValues(alpha: 0.4),
+                                    ? Colors.orange.withValues(alpha: 0.4)
+                                    : AdminTheme.purple.withValues(alpha: 0.4),
                               ),
                               backgroundColor: (isInProgress || isCompleted)
-                                  ? Colors.orange.shade50
+                                  ? Colors.orange.withValues(alpha: 0.15)
                                   : Colors.transparent,
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               shape: RoundedRectangleBorder(
@@ -211,10 +212,10 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                             ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: isCompleted
-                                  ? Colors.green.shade50
-                                  : const Color(0xFF6C63FF),
+                                  ? Colors.green.withValues(alpha: 0.15)
+                                  : AdminTheme.purple,
                               foregroundColor: isCompleted
-                                  ? Colors.green.shade700
+                                  ? Colors.green.shade300
                                   : Colors.white,
                               elevation: 0,
                               padding: const EdgeInsets.symmetric(vertical: 10),
@@ -246,8 +247,8 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                               fontSize: 13, fontWeight: FontWeight.w600),
                         ),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF1A1A2E),
-                          side: const BorderSide(color: Color(0xFFDADADF)),
+                          foregroundColor: context.textPrimary,
+                          side: BorderSide(color: context.border),
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),

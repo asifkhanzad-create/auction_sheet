@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'admin_theme.dart';
 import 'admin_auth_service.dart';
 
 class AdminLoginScreen extends StatefulWidget {
@@ -32,7 +33,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFC),
+      backgroundColor: context.bg,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -43,25 +44,25 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                 width: 72,
                 height: 72,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF6C63FF),
+                  color: AdminTheme.purple,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Icon(Icons.admin_panel_settings_rounded,
                     color: Colors.white, size: 36),
               ),
               const SizedBox(height: 24),
-              const Text(
+              Text(
                 'Admin Panel',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF1A1A2E),
+                  color: context.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Sign in with your admin Google account',
-                style: TextStyle(color: Colors.black54, fontSize: 14),
+                style: TextStyle(color: context.textSecondary, fontSize: 14),
               ),
               const SizedBox(height: 32),
               if (_error != null) ...[
@@ -86,7 +87,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                       : const Icon(Icons.login_rounded, size: 20),
                   label: Text(_loading ? 'Signing in...' : 'Sign in with Google'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6C63FF),
+                    backgroundColor: AdminTheme.purple,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(

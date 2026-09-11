@@ -246,7 +246,7 @@ class _ChatPanelState extends State<ChatPanel> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide(color: AppColors.purple, width: 1.6),
+                        borderSide: const BorderSide(color: AppColors.purple, width: 1.6),
                       ),
                     ),
                     onSubmitted: (_) => _send(),
