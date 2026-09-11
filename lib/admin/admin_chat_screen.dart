@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/firestore_service.dart';
 import '../services/cloudinary_service.dart';
 import 'admin_theme.dart';
@@ -30,6 +31,7 @@ class AdminChatScreen extends StatefulWidget {
 
 class _AdminChatScreenState extends State<AdminChatScreen> {
   bool _uploadingReport = false;
+  bool _historyExpanded = false;
 
   @override
   void initState() {
@@ -54,6 +56,25 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Marked as completed')),
       );
+    }
+  }
+
+  String _relativeTime(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
+  }
+
+  Future<void> _openFile(String url) async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open file.')),
+        );
+      }
     }
   }
 
@@ -136,11 +157,17 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
           StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
             stream: FirestoreService.statusStream(widget.chassisNumber),
             builder: (context, snapshot) {
-              final status =
-                  snapshot.data?.data()?['status'] ?? widget.initialStatus;
+              final data = snapshot.data?.data();
+              final status = data?['status'] ?? widget.initialStatus;
               final isPending = status == 'pending';
               final isInProgress = status == 'in_progress';
               final isCompleted = status == 'completed';
+
+              final rawDeliverables = data?['deliverables'] as List<dynamic>?;
+              final deliverables = rawDeliverables
+                      ?.map((e) => Map<String, dynamic>.from(e as Map))
+                      .toList() ??
+                  [];
 
               return Container(
                 width: double.infinity,
@@ -256,6 +283,105 @@ class _AdminChatScreenState extends State<AdminChatScreen> {
                         ),
                       ),
                     ),
+                    if (deliverables.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      InkWell(
+                        onTap: () => setState(
+                            () => _historyExpanded = !_historyExpanded),
+                        borderRadius: BorderRadius.circular(10),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.folder_outlined,
+                                size: 16,
+                                color: context.textSecondary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Documents sent (${deliverables.length})',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: context.textSecondary,
+                                ),
+                              ),
+                              const Spacer(),
+                              Icon(
+                                _historyExpanded
+                                    ? Icons.keyboard_arrow_up_rounded
+                                    : Icons.keyboard_arrow_down_rounded,
+                                size: 18,
+                                color: context.textSecondary,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (_historyExpanded) ...[
+                        const SizedBox(height: 6),
+                        ...deliverables.reversed.map((d) {
+                          final fileName =
+                              (d['fileName'] ?? 'file').toString();
+                          final fileType =
+                              (d['fileType'] ?? 'file').toString();
+                          final fileUrl = (d['fileUrl'] ?? '').toString();
+                          final sentAtTs = d['sentAt'] as Timestamp?;
+                          return InkWell(
+                            onTap: fileUrl.isEmpty
+                                ? null
+                                : () => _openFile(fileUrl),
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 4),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    fileType == 'pdf'
+                                        ? Icons.picture_as_pdf_rounded
+                                        : Icons.image_rounded,
+                                    size: 15,
+                                    color: AdminTheme.purple,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      fileName,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: context.textPrimary,
+                                        decoration:
+                                            TextDecoration.underline,
+                                        decorationColor:
+                                            context.textSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  if (sentAtTs != null)
+                                    Text(
+                                      _relativeTime(sentAtTs.toDate()),
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: context.textSecondary,
+                                      ),
+                                    ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    Icons.open_in_new_rounded,
+                                    size: 13,
+                                    color: context.textSecondary,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+                      ],
+                    ],
                   ],
                 ),
               );

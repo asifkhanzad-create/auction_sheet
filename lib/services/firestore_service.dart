@@ -133,6 +133,12 @@ class FirestoreService {
           'fileUrl': fileUrl,
           'fileName': fileName,
           'fileType': fileType, // "pdf" | "image"
+          // FieldValue.serverTimestamp() can't be used inside arrayUnion
+          // items (Firestore restriction), so we use a client timestamp.
+          // Fine here — this is just "when the admin uploaded it", shown
+          // as a rough relative time, not something needing server-exact
+          // precision.
+          'sentAt': Timestamp.now(),
         }
       ]),
     });
