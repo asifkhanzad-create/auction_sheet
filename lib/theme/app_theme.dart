@@ -7,7 +7,7 @@ class AppColors {
   static const purple = Color(0xFF6C63FF);
 
   // Light theme surfaces
-  static const lightBg = Color(0xFFFAFAFC);
+  static const lightBg = Color(0xFFF3F5F7);
   static const lightCard = Colors.white;
   static const lightBorder = Color(0xFFE0E0E8);
   static const lightTextPrimary = Color(0xFF1A1A2E);
@@ -39,7 +39,7 @@ class AppTheme {
         seedColor: AppColors.purple,
         brightness: Brightness.light,
       ),
-      scaffoldBackgroundColor: const Color(0xFFF5F6F7),
+      scaffoldBackgroundColor: AppColors.lightBg,
       cardColor: AppColors.lightCard,
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.lightCard,

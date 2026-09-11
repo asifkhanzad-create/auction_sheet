@@ -234,11 +234,39 @@ class _RequestStepTrackerState extends State<RequestStepTracker>
 
   Widget _buildTimeline(int active) {
     final overallCompleted = widget.status == 'completed';
-    return Column(
-      children: List.generate(_titles.length, (i) {
-        final isDone = overallCompleted ? true : i < active;
-        final isActive = overallCompleted ? false : i == active;
-        final isLast = i == _titles.length - 1;
+    return Builder(builder: (context) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+        decoration: BoxDecoration(
+          color: context.card,
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: context.isDark ? 0.25 : 0.05),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Progress',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: context.textSecondary,
+                letterSpacing: 0.2,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Column(
+              children: List.generate(_titles.length, (i) {
+                final isDone = overallCompleted ? true : i < active;
+                final isActive = overallCompleted ? false : i == active;
+                final isLast = i == _titles.length - 1;
 
         return IntrinsicHeight(
           child: Row(
@@ -366,7 +394,11 @@ class _RequestStepTrackerState extends State<RequestStepTracker>
           ),
         );
       }),
-    );
+            ),
+          ],
+        ),
+      );
+    });
   }
 }
 

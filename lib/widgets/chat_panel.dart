@@ -10,13 +10,13 @@ import 'stream_error_view.dart';
 class ChatPanel extends StatefulWidget {
   final String chassisNumber;
   final String userId;
-  final ValueChanged<bool>? onFocusChange;
+  final bool autofocus;
 
   const ChatPanel({
     super.key,
     required this.chassisNumber,
     required this.userId,
-    this.onFocusChange,
+    this.autofocus = false,
   });
 
   @override
@@ -34,9 +34,14 @@ class _ChatPanelState extends State<ChatPanel> {
   @override
   void initState() {
     super.initState();
-    _focusNode.addListener(() {
-      widget.onFocusChange?.call(_focusNode.hasFocus);
-    });
+    if (widget.autofocus) {
+      // Wait for the first frame so the Scaffold/AppBar transition has
+      // settled before requesting focus — requesting immediately during
+      // a page-route push can get swallowed by the transition animation.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _focusNode.requestFocus();
+      });
+    }
   }
 
   @override
@@ -46,19 +51,15 @@ class _ChatPanelState extends State<ChatPanel> {
     super.dispose();
   }
 
-  Future<void> _send() async {
+  void _send() {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
+    FirestoreService.sendMessage(
+      chassisNumber: widget.chassisNumber,
+      senderId: widget.userId,
+      text: text,
+    );
     _controller.clear();
-    try {
-      await FirestoreService.sendMessage(
-        chassisNumber: widget.chassisNumber,
-        senderId: widget.userId,
-        text: text,
-      );
-    } catch (e) {
-      _showError('Message failed to send: $e');
-    }
   }
 
   Future<void> _pickAndUploadFile() async {
@@ -197,8 +198,20 @@ class _ChatPanelState extends State<ChatPanel> {
           ),
         SafeArea(
           top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+            decoration: BoxDecoration(
+              color: context.card,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: context.isDark ? 0.25 : 0.06),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
             child: Row(
               children: [
                 IconButton(

@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import '../services/app_auth_service.dart';
+import '../theme/app_theme.dart';
 import 'main_shell.dart';
 import 'login_screen.dart';
 import 'signup_screen.dart';
 import '../widgets/google_logo.dart';
-
-const _purple = Color(0xFF6C63FF);
-const _dark = Color(0xFF1A1A2E);
-const _bg = Color(0xFFFAFAFC);
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -28,6 +25,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     try {
       await AppAuthService.signInWithGoogle();
       _goHome();
+    } on SignInCancelledException {
+      // User closed the sheet — no error to show.
     } catch (e) {
       setState(() => _error = AppAuthService.friendlyError(e));
     } finally {
@@ -46,7 +45,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     final controller = TextEditingController();
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: context.card,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -59,24 +58,26 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Continue as Guest',
                 style: TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.w500, color: _dark),
+                    fontSize: 18, fontWeight: FontWeight.w500, color: context.textPrimary),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'Enter your name to continue without an account.',
-                style: TextStyle(fontSize: 14, color: Colors.black54),
+                style: TextStyle(fontSize: 14, color: context.textSecondary),
               ),
               const SizedBox(height: 18),
               TextField(
                 controller: controller,
                 autofocus: true,
+                style: TextStyle(color: context.textPrimary),
                 decoration: InputDecoration(
                   hintText: 'Your full name',
+                  hintStyle: TextStyle(color: context.textSecondary),
                   filled: true,
-                  fillColor: const Color(0xFFF5F5F8),
+                  fillColor: context.fieldFill,
                   contentPadding: const EdgeInsets.symmetric(
                       vertical: 16, horizontal: 16),
                   border: OutlineInputBorder(
@@ -105,7 +106,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _purple,
+                    backgroundColor: AppColors.purple,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -127,7 +128,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: context.bg,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -145,8 +146,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               Container(
                 width: 140,
                 height: 140,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFEDEBFF),
+                decoration: BoxDecoration(
+                  color: context.lilac,
                   shape: BoxShape.circle,
                 ),
                 child: Padding(
@@ -158,20 +159,20 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Verified. Original. Yours.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 23,
                   fontWeight: FontWeight.w600,
-                  color: _dark,
+                  color: context.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Get a 100% original, verified auction \nsheet for any Japanese import vehicle.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: Colors.black54, height: 1.35),
+                style: TextStyle(fontSize: 14, color: context.textSecondary, height: 1.35),
               ),
               const SizedBox(height: 22),
 
@@ -196,7 +197,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                 builder: (_) => const SignupScreen()),
                           ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6C63FF),
+                    backgroundColor: AppColors.purple,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     shape: RoundedRectangleBorder(
@@ -214,12 +215,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
               Row(
                 children: [
-                  Expanded(child: Divider(color: Colors.grey.shade300)),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
-                    child: Text('Or', style: TextStyle(color: Colors.black45)),
+                  Expanded(child: Divider(color: context.border)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text('Or', style: TextStyle(color: context.textSecondary)),
                   ),
-                  Expanded(child: Divider(color: Colors.grey.shade300)),
+                  Expanded(child: Divider(color: context.border)),
                 ],
               ),
               const SizedBox(height: 18),
@@ -232,7 +233,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               const SizedBox(height: 10),
               _SocialButton(
                 iconWidget: const Icon(Icons.mail_outline_rounded, size: 20),
-                iconColor: _purple,
+                iconColor: AppColors.purple,
                 label: 'Continue with Email',
                 onTap: _loading
                     ? null
@@ -244,7 +245,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               const SizedBox(height: 10),
               _SocialButton(
                 icon: Icons.person_outline_rounded,
-                iconColor: const Color.fromARGB(211, 0, 0, 0),
+                iconColor: context.textPrimary,
                 label: 'Continue as Guest',
                 onTap: _loading ? null : _showGuestSheet,
               ),
@@ -255,8 +256,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text("Already have an account? ",
-                        style: TextStyle(color: Colors.black54, fontSize: 14)),
+                    Text("Already have an account? ",
+                        style: TextStyle(color: context.textSecondary, fontSize: 14)),
                     GestureDetector(
                       onTap: () => Navigator.push(
                         context,
@@ -265,7 +266,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       child: const Text(
                         'Sign In',
                         style: TextStyle(
-                          color: _purple,
+                          color: AppColors.purple,
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
                         ),
@@ -277,7 +278,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
               if (_loading) ...[
                 const SizedBox(height: 4),
-                const CircularProgressIndicator(strokeWidth: 2, color: _purple),
+                const CircularProgressIndicator(strokeWidth: 2, color: AppColors.purple),
                 const SizedBox(height: 8),
               ],
             ],
@@ -315,12 +316,12 @@ class _SocialButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
-          foregroundColor: _dark,
+          foregroundColor: context.textPrimary,
           padding: const EdgeInsets.symmetric(vertical: 15),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(28),
           ),
-          side: const BorderSide(color: Color(0xFFE0E0E8)),
+          side: BorderSide(color: context.border),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -329,8 +330,8 @@ class _SocialButton extends StatelessWidget {
                 Icon(icon, size: iconSize, color: iconColor),
             const SizedBox(width: 10),
             Text(label,
-                style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w500, color: _dark)),
+                style: TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.w500, color: context.textPrimary)),
           ],
         ),
       ),

@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import '../services/app_auth_service.dart';
+import '../theme/app_theme.dart';
 import 'main_shell.dart';
 import 'signup_screen.dart';
 import '../widgets/google_logo.dart';
-
-const _purple = Color(0xFF6C63FF);
-const _dark = Color(0xFF1A1A2E);
-const _bg = Color(0xFFFAFAFC);
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -69,6 +66,8 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       await AppAuthService.signInWithGoogle();
       _goHome();
+    } on SignInCancelledException {
+      // User closed the sheet — no error to show.
     } catch (e) {
       setState(() => _error = AppAuthService.friendlyError(e));
     } finally {
@@ -94,24 +93,24 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  InputDecoration _fieldDecoration(String hint) {
+  InputDecoration _fieldDecoration(BuildContext context, String hint) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: Colors.black38, fontSize: 14),
+      hintStyle: TextStyle(color: context.textSecondary, fontSize: 14),
       filled: true,
-      fillColor: Colors.white,
+      fillColor: context.fieldFill,
       contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Color(0xFFE0E0E8)),
+        borderSide: BorderSide(color: context.border),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Color(0xFFE0E0E8)),
+        borderSide: BorderSide(color: context.border),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: _purple, width: 1.6),
+        borderSide: const BorderSide(color: AppColors.purple, width: 1.6),
       ),
     );
   }
@@ -119,7 +118,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: context.bg,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -130,7 +129,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 alignment: Alignment.centerLeft,
                 child: IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.arrow_back_rounded, color: _dark),
+                  icon: Icon(Icons.arrow_back_rounded, color: context.textPrimary),
                   padding: EdgeInsets.zero,
                 ),
               ),
@@ -143,15 +142,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     fit: BoxFit.contain),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Welcome Back',
                 style: TextStyle(
-                    fontSize: 24, fontWeight: FontWeight.w700, color: _dark),
+                    fontSize: 24, fontWeight: FontWeight.w700, color: context.textPrimary),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'Log in to your account to continue.',
-                style: TextStyle(fontSize: 14, color: Colors.black54),
+                style: TextStyle(fontSize: 14, color: context.textSecondary),
               ),
               const SizedBox(height: 28),
 
@@ -170,13 +169,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade700)),
+                        color: context.textSecondary)),
               ),
               const SizedBox(height: 6),
               TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: _fieldDecoration('Enter your email'),
+                style: TextStyle(color: context.textPrimary),
+                decoration: _fieldDecoration(context, 'Enter your email'),
               ),
               const SizedBox(height: 18),
 
@@ -186,20 +186,21 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade700)),
+                        color: context.textSecondary)),
               ),
               const SizedBox(height: 6),
               TextField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
-                decoration: _fieldDecoration('Enter your password').copyWith(
+                style: TextStyle(color: context.textPrimary),
+                decoration: _fieldDecoration(context, 'Enter your password').copyWith(
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscurePassword
                           ? Icons.visibility_off_outlined
                           : Icons.visibility_outlined,
                       size: 20,
-                      color: Colors.black38,
+                      color: context.textSecondary,
                     ),
                     onPressed: () =>
                         setState(() => _obscurePassword = !_obscurePassword),
@@ -219,15 +220,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         height: 20,
                         child: Checkbox(
                           value: _rememberMe,
-                          activeColor: _purple,
+                          activeColor: AppColors.purple,
                           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           onChanged: (v) =>
                               setState(() => _rememberMe = v ?? true),
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Text('Remember me',
-                          style: TextStyle(fontSize: 12, color: Colors.black54)),
+                      Text('Remember me',
+                          style: TextStyle(fontSize: 12, color: context.textSecondary)),
                     ],
                   ),
                   GestureDetector(
@@ -237,7 +238,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: _purple),
+                          color: AppColors.purple),
                     ),
                   ),
                 ],
@@ -249,7 +250,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: ElevatedButton(
                   onPressed: _loading ? null : _signIn,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _purple,
+                    backgroundColor: AppColors.purple,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 17),
                     shape: RoundedRectangleBorder(
@@ -273,12 +274,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
               Row(
                 children: [
-                  Expanded(child: Divider(color: Colors.grey.shade300)),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
-                    child: Text('Or', style: TextStyle(color: Colors.black45)),
+                  Expanded(child: Divider(color: context.border)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text('Or', style: TextStyle(color: context.textSecondary)),
                   ),
-                  Expanded(child: Divider(color: Colors.grey.shade300)),
+                  Expanded(child: Divider(color: context.border)),
                 ],
               ),
               const SizedBox(height: 22),
@@ -290,9 +291,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     width: 52,
                     height: 52,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.card,
                       shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFFE0E0E8)),
+                      border: Border.all(color: context.border),
                     ),
                     child: const Center(child: GoogleLogo(size: 24)),
                   ),
@@ -305,8 +306,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text("Don't have an account? ",
-                        style: TextStyle(color: Colors.black54, fontSize: 14)),
+                    Text("Don't have an account? ",
+                        style: TextStyle(color: context.textSecondary, fontSize: 14)),
                     GestureDetector(
                       onTap: () => Navigator.pushReplacement(
                         context,
@@ -315,7 +316,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: const Text(
                         'Sign Up',
                         style: TextStyle(
-                            color: _purple,
+                            color: AppColors.purple,
                             fontWeight: FontWeight.w700,
                             fontSize: 14),
                       ),

@@ -91,9 +91,9 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 28),
 
-            // Dark mode toggle
+            // Theme mode selector
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: context.card,
                 borderRadius: BorderRadius.circular(14),
@@ -102,28 +102,55 @@ class ProfileScreen extends StatelessWidget {
               child: ValueListenableBuilder<ThemeMode>(
                 valueListenable: ThemeController.mode,
                 builder: (context, mode, _) {
-                  final isDark = mode == ThemeMode.dark;
-                  return SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      'Dark Mode',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                        color: context.textPrimary,
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.dark_mode_rounded, color: AppColors.purple),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Appearance',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                              color: context.textPrimary,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    subtitle: Text(
-                      isDark ? 'On' : 'Off',
-                      style: TextStyle(fontSize: 12, color: context.textSecondary),
-                    ),
-                    secondary: Icon(
-                      isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-                      color: AppColors.purple,
-                    ),
-                    value: isDark,
-                    activeThumbColor: AppColors.purple,
-                    onChanged: (value) => ThemeController.setDark(value),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _ThemeOption(
+                              label: 'System',
+                              icon: Icons.brightness_auto_rounded,
+                              selected: mode == ThemeMode.system,
+                              onTap: () => ThemeController.setMode(ThemeMode.system),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _ThemeOption(
+                              label: 'Light',
+                              icon: Icons.light_mode_rounded,
+                              selected: mode == ThemeMode.light,
+                              onTap: () => ThemeController.setMode(ThemeMode.light),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _ThemeOption(
+                              label: 'Dark',
+                              icon: Icons.dark_mode_rounded,
+                              selected: mode == ThemeMode.dark,
+                              onTap: () => ThemeController.setMode(ThemeMode.dark),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   );
                 },
               ),
@@ -144,6 +171,57 @@ class ProfileScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ThemeOption extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ThemeOption({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: selected ? context.lilac : context.fieldFill,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? AppColors.purple : context.border,
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: selected ? AppColors.purple : context.textSecondary,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                color: selected ? AppColors.purple : context.textSecondary,
               ),
             ),
           ],
