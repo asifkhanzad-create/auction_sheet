@@ -13,6 +13,7 @@ typedef _BentoSpec = ({
   double heroHeight,
   double gap,
   double gapInner,
+  double verticalGap,
   double tilePadding,
   double titleSize,
   double titleSpacing,
@@ -108,6 +109,7 @@ class _NewRequestScreenState extends State<NewRequestScreen> {
       heroHeight: _scale(viewportHeight, 100, 180) * s,
       gap: _scale(viewportHeight, 10, 16) * s,
       gapInner: _scale(viewportHeight, 6, 12) * s,
+      verticalGap: 18 * s,
       tilePadding: _scale(viewportHeight, 12, 20) * s,
       titleSize: _scale(viewportHeight, 18, 24) * s,
       titleSpacing: _scale(viewportHeight, 5, 10) * s,
@@ -211,7 +213,7 @@ class _NewRequestScreenState extends State<NewRequestScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _heroTile(spec),
-                    SizedBox(height: spec.gap),
+                    SizedBox(height: spec.verticalGap),
                     if (wide)
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -223,9 +225,9 @@ class _NewRequestScreenState extends State<NewRequestScreen> {
                             child: Column(
                               children: [
                                 _trustTile('100% Original', spec),
-                                SizedBox(height: spec.gapInner),
+                                SizedBox(height: spec.verticalGap),
                                 _trustTile('Verified Source', spec),
-                                SizedBox(height: spec.gapInner),
+                                SizedBox(height: spec.verticalGap),
                                 _trustTile('Fast Delivery', spec),
                               ],
                             ),
@@ -234,7 +236,7 @@ class _NewRequestScreenState extends State<NewRequestScreen> {
                       )
                     else ...[
                       _titleTile(spec),
-                      SizedBox(height: spec.gap),
+                      SizedBox(height: spec.verticalGap),
                       Row(
                         children: [
                           Expanded(child: _trustTile('100% Original', spec)),
@@ -245,10 +247,8 @@ class _NewRequestScreenState extends State<NewRequestScreen> {
                         ],
                       ),
                     ],
-                    SizedBox(height: spec.gap),
-                    _inputTile(spec),
-                    SizedBox(height: spec.gap),
-                    _ctaTile(spec),
+                    SizedBox(height: spec.verticalGap),
+                    _inputAndCtaTile(spec),
                   ],
                 ),
               ),
@@ -374,9 +374,8 @@ class _NewRequestScreenState extends State<NewRequestScreen> {
     );
   }
 
-  /// Input tile — adds a real visible label (placeholder-only inputs are
-  /// a High-severity UX-guideline violation) and submits on keyboard done.
-  Widget _inputTile(_BentoSpec spec) {
+  /// Input + CTA combined tile — single bento card with label, field, and button.
+  Widget _inputAndCtaTile(_BentoSpec spec) {
     return _bentoTile(
       padding: EdgeInsets.all(spec.tilePadding),
       child: Column(
@@ -420,41 +419,34 @@ class _NewRequestScreenState extends State<NewRequestScreen> {
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  /// CTA tile — height comes from the continuous spec, so the
-  /// text↔spinner swap never shifts layout.
-  Widget _ctaTile(_BentoSpec spec) {
-    return _bentoTile(
-      padding: const EdgeInsets.all(16),
-      child: SizedBox(
-        width: double.infinity,
-        height: spec.ctaHeight,
-        child: ElevatedButton(
-          onPressed: _submitting ? null : _submit,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.purple,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-            elevation: 0,
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: spec.ctaHeight,
+            child: ElevatedButton(
+              onPressed: _submitting ? null : _submit,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.purple,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                shape:
+                    RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                elevation: 0,
+              ),
+              child: _submitting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text(
+                      'Get Auction Sheet',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+            ),
           ),
-          child: _submitting
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white),
-                )
-              : const Text(
-                  'Get Auction Sheet',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-        ),
+        ],
       ),
     );
   }
