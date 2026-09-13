@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-/// Modern "hero card + vertical timeline" status view — replaces the old
-/// horizontal 3-circle tracker. Same backend inputs (status, createdAt):
-/// no new fields were added, so steps 2 & 3 intentionally show no
-/// timestamp (we don't store when sourcing started / finished).
+/// Compact 2-tile bento step tracker (ui-ux-pro-max style).
+///
+///   Tile 1  : Hero gradient — full width.
+///   Tile 2  : Single horizontal bento card containing all 3 steps
+///             stacked vertically inside (timeline-style with check marks).
+///
+/// No green, no asymmetric flex step tiles — all step accent coloring uses
+/// the app's purple + lilac tokens only. Device viewport sizing follows
+/// the same interpolation pattern as new_request_screen.dart.
 class RequestStepTracker extends StatefulWidget {
   final String status; // "pending" | "in_progress" | "completed"
   final DateTime? createdAt;
@@ -40,12 +45,56 @@ class _RequestStepTrackerState extends State<RequestStepTracker>
     "We're locating your auction sheet",
     'Your auction sheet is ready',
   ];
+  static const _stepIcons = [
+    Icons.inbox_rounded,
+    Icons.search_rounded,
+    Icons.description_rounded,
+  ];
+
+  // -------- Compact device scaling (pattern from new_request_screen) ----
+  // Tighter base bounds (520 → 800 dp) + smaller small/large endpoints
+  // so the 2-tile layout stays well clear of the chat-message preview
+  // bar at the bottom of RequestDetailScreen (avoids the 6–7 px overflow
+  // that used to occur on small portrait phones).
+  static const double _tileRadius = 24;
+  static const double _minH = 520;
+  static const double _maxH = 800;
+
+  static double _scale(double viewportHeight, double small, double large) {
+    final t = ((viewportHeight - _minH) / (_maxH - _minH)).clamp(0.0, 1.0);
+    return small + (large - small) * t;
+  }
+
+  ({
+    double heroHeight,
+    double gap,
+    double tilePadding,
+    double titleSize,
+    double stepTitleSize,
+    double bodySize,
+    double iconSize,
+    double stepIconSize,
+    double chipHeight,
+    double stepItemHeight,
+  }) _specFor(double viewportHeight) {
+    return (
+      heroHeight: _scale(viewportHeight, 86, 140),
+      gap: _scale(viewportHeight, 10, 14),
+      tilePadding: _scale(viewportHeight, 12, 16),
+      titleSize: _scale(viewportHeight, 15, 19),
+      stepTitleSize: _scale(viewportHeight, 13, 14.5),
+      bodySize: _scale(viewportHeight, 11, 12.5),
+      iconSize: _scale(viewportHeight, 20, 26),
+      stepIconSize: _scale(viewportHeight, 18, 22),
+      chipHeight: _scale(viewportHeight, 20, 26),
+      stepItemHeight: _scale(viewportHeight, 52, 64),
+    );
+  }
+  // ---------------------------------------------------------------------
 
   @override
   void initState() {
     super.initState();
-    // Slow, gentle loop — signals "still working" without implying a
-    // countdown/ETA, since we don't have real timing data to show.
     _ringController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 3),
@@ -90,34 +139,80 @@ class _RequestStepTrackerState extends State<RequestStepTracker>
 
   @override
   Widget build(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    final spec = _specFor(mq.size.height);
     final active = widget._activeIndex;
     final isCompleted = widget.status == 'completed';
 
-    return Column(
-      children: [
-        _buildHeroCard(active, isCompleted),
-        const SizedBox(height: 16),
-        _buildTimeline(active),
-      ],
+    final cappedTextScaler = mq.textScaler.clamp(maxScaleFactor: 1.12);
+
+    return MediaQuery(
+      data: mq.copyWith(textScaler: cappedTextScaler),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _heroTile(spec, active, isCompleted),
+              SizedBox(height: spec.gap),
+              _stepsTile(spec, active, isCompleted),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
-  Widget _buildHeroCard(int active, bool isCompleted) {
+  // -------- Shared bento surface (matches new_request_screen) ----------
+  Widget _bentoTile({
+    required Widget child,
+    Color? color,
+    double? height,
+    AlignmentGeometry? alignment,
+    EdgeInsetsGeometry? padding,
+  }) {
+    padding ??= const EdgeInsets.all(20);
+    final dark = context.isDark;
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+      height: height,
+      alignment: alignment,
+      padding: padding,
+      decoration: BoxDecoration(
+        color: color ?? context.card,
+        borderRadius: BorderRadius.circular(_tileRadius),
+        border: dark ? Border.all(color: context.border) : null,
+        boxShadow: dark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 6,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+      ),
+      child: child,
+    );
+  }
+
+  // -------- Tile 1: Hero gradient --------------------------------------
+  Widget _heroTile(spec, int active, bool isCompleted) {
+    return Container(
+      height: spec.heroHeight,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [Color(0xFF6C63FF), Color(0xFF564FD8)],
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(_tileRadius),
         boxShadow: [
           BoxShadow(
-            color: AppColors.purple.withValues(alpha: 0.30),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: AppColors.purple.withValues(alpha: 0.28),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -127,13 +222,15 @@ class _RequestStepTrackerState extends State<RequestStepTracker>
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (!isCompleted)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    height: spec.chipHeight,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(999),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -159,48 +256,50 @@ class _RequestStepTrackerState extends State<RequestStepTracker>
                       ],
                     ),
                   ),
-                const SizedBox(height: 10),
+                SizedBox(height: 6),
                 Text(
                   _titles[active],
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 22,
+                    fontSize: spec.titleSize,
                     fontWeight: FontWeight.w700,
+                    height: 1.2,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 3),
                 Text(
                   _heroSubtext,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.85),
-                    fontSize: 12.5,
+                    color: Colors.white.withValues(alpha: 0.88),
+                    fontSize: spec.bodySize,
                     height: 1.3,
                   ),
                 ),
                 if (!isCompleted) ...[
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2),
                   Text(
-                    'This can take 10–30 minutes.',
+                    '10–30 minutes',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.6),
-                      fontSize: 11,
+                      color: Colors.white.withValues(alpha: 0.62),
+                      fontSize: spec.bodySize - 1,
                     ),
                   ),
                 ],
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          _buildRing(isCompleted),
+          const SizedBox(width: 8),
+          _heroRing(isCompleted, spec.iconSize),
         ],
       ),
     );
   }
 
-  Widget _buildRing(bool isCompleted) {
+  Widget _heroRing(bool isCompleted, double iconSize) {
+    const box = 60.0;
     return SizedBox(
-      width: 68,
-      height: 68,
+      width: box,
+      height: box,
       child: Stack(
         alignment: Alignment.center,
         children: [
@@ -214,191 +313,302 @@ class _RequestStepTrackerState extends State<RequestStepTracker>
                 );
               },
               child: CustomPaint(
-                size: const Size(68, 68),
+                size: const Size(box, box),
                 painter: _ArcPainter(),
               ),
             ),
           Container(
-            width: 48,
-            height: 48,
+            width: box * 0.72,
+            height: box * 0.72,
             decoration: const BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
             ),
-            child: Icon(_heroIcon, color: AppColors.purple, size: 24),
+            child: Icon(_heroIcon, color: AppColors.purple, size: iconSize),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTimeline(int active) {
-    final overallCompleted = widget.status == 'completed';
-    return Builder(builder: (context) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-        decoration: BoxDecoration(
-          color: context.card,
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: context.isDark ? 0.25 : 0.05),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
+  // -------- Tile 2: Single horizontal card — 3 steps stacked vertically
+  Widget _stepsTile(spec, int active, bool overallCompleted) {
+    return _bentoTile(
+      padding: EdgeInsets.all(spec.tilePadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: EdgeInsets.only(left: 2, bottom: spec.tilePadding * 0.6),
+            child: Text(
               'Progress',
               style: TextStyle(
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: FontWeight.w700,
                 color: context.textSecondary,
                 letterSpacing: 0.2,
               ),
             ),
-            const SizedBox(height: 16),
-            Column(
-              children: List.generate(_titles.length, (i) {
-                final isDone = overallCompleted ? true : i < active;
-                final isActive = overallCompleted ? false : i == active;
-                final isLast = i == _titles.length - 1;
+          ),
+          Column(
+            children: List.generate(_titles.length, (i) {
+              final isDone = overallCompleted ? true : i < active;
+              final isActive = overallCompleted ? false : i == active;
+              final isLast = i == _titles.length - 1;
 
-        return IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Column(
-                children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    width: isActive ? 30 : 26,
-                    height: isActive ? 30 : 26,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isDone
-                          ? AppColors.purple
-                          : isActive
-                              ? context.card
-                              : context.lilac,
-                      border: isActive
-                          ? Border.all(color: AppColors.purple, width: 2.5)
-                          : null,
-                    ),
-                    child: Center(
-                      child: isDone
-                          ? const Icon(Icons.check_rounded, color: Colors.white, size: 15)
-                          : isActive
-                              ? Container(
-                                  width: 9,
-                                  height: 9,
-                                  decoration: const BoxDecoration(
-                                    color: AppColors.purple,
-                                    shape: BoxShape.circle,
-                                  ),
-                                )
-                              : Text(
-                                  '${i + 1}',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFFA9A4E0),
-                                  ),
+              return SizedBox(
+                height: spec.stepItemHeight,
+                child: _StepRow(
+                  index: i,
+                  isDone: isDone,
+                  isActive: isActive,
+                  isLast: isLast,
+                  iconSize: spec.stepIconSize,
+                  titleSize: spec.stepTitleSize,
+                  bodySize: spec.bodySize,
+                  createdAt: i == 0 ? widget.createdAt : null,
+                  relativeTime: i == 0 && widget.createdAt != null
+                      ? _relativeTime(widget.createdAt!)
+                      : null,
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Single vertical step row inside the shared steps bento card.
+// Purples only — no green anywhere.
+class _StepRow extends StatelessWidget {
+  final int index;
+  final bool isDone;
+  final bool isActive;
+  final bool isLast;
+  final double iconSize;
+  final double titleSize;
+  final double bodySize;
+  final DateTime? createdAt;
+  final String? relativeTime;
+
+  const _StepRow({
+    required this.index,
+    required this.isDone,
+    required this.isActive,
+    required this.isLast,
+    required this.iconSize,
+    required this.titleSize,
+    required this.bodySize,
+    this.createdAt,
+    this.relativeTime,
+  });
+
+  static const _titles = ['Request received', 'Sourcing sheet', 'Sheet ready'];
+  static const _descriptions = [
+    'Your request has been received',
+    "We're locating your auction sheet",
+    'Your auction sheet is ready',
+  ];
+  static const _stepIcons = [
+    Icons.inbox_rounded,
+    Icons.search_rounded,
+    Icons.description_rounded,
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final dotSize = isActive ? 28.0 : 24.0;
+
+    final Color nodeBg;
+    final Color nodeFg;
+    final Color? nodeBorderColor;
+    final double? nodeBorderWidth;
+    if (isDone) {
+      nodeBg = AppColors.purple;
+      nodeFg = Colors.white;
+      nodeBorderColor = null;
+      nodeBorderWidth = null;
+    } else if (isActive) {
+      nodeBg = context.card;
+      nodeFg = AppColors.purple;
+      nodeBorderColor = AppColors.purple;
+      nodeBorderWidth = 2.2;
+    } else {
+      nodeBg = context.lilac;
+      nodeFg = AppColors.purple.withValues(alpha: 0.55);
+      nodeBorderColor = null;
+      nodeBorderWidth = null;
+    }
+
+    final Color connectorColor =
+        isDone ? AppColors.purple : context.border;
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Node + connector column
+          SizedBox(
+            width: 30,
+            child: Column(
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  width: dotSize,
+                  height: dotSize,
+                  margin: EdgeInsets.only(top: isActive ? 0 : 2),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: nodeBg,
+                    border: nodeBorderColor != null
+                        ? Border.all(color: nodeBorderColor, width: nodeBorderWidth!)
+                        : null,
+                  ),
+                  child: Center(
+                    child: isDone
+                        ? Icon(Icons.check_rounded,
+                            color: nodeFg, size: iconSize * 0.7)
+                        : isActive
+                            ? Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.purple,
+                                  shape: BoxShape.circle,
                                 ),
+                              )
+                            : Icon(_stepIcons[index],
+                                color: nodeFg, size: iconSize * 0.62),
+                  ),
+                ),
+                if (!isLast)
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      margin: const EdgeInsets.symmetric(vertical: 3),
+                      color: connectorColor,
                     ),
                   ),
-                  if (!isLast)
-                    Expanded(
-                      child: Container(
-                        width: 2,
-                        margin: const EdgeInsets.symmetric(vertical: 2),
-                        color: isDone ? AppColors.purple : context.border,
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(bottom: isLast ? 0 : 22),
-                  child: Row(
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Body + right-aligned meta
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _titles[i],
-                              style: TextStyle(
-                                fontSize: 14.5,
-                                fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
-                                color: isDone || isActive
-                                    ? context.textPrimary
-                                    : context.textSecondary,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              _descriptions[i],
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: context.textSecondary,
-                              ),
-                            ),
-                          ],
+                      const SizedBox(height: 4),
+                      Text(
+                        _titles[index],
+                        style: TextStyle(
+                          fontSize: titleSize,
+                          fontWeight:
+                              isActive ? FontWeight.w700 : FontWeight.w600,
+                          color: isDone || isActive
+                              ? context.textPrimary
+                              : context.textSecondary,
+                          height: 1.2,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          if (isDone || isActive)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: isDone
-                                    ? Colors.green.withValues(alpha: 0.15)
-                                    : context.lilac,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                isDone ? 'Done' : 'Now',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  color: isDone ? Colors.green.shade700 : AppColors.purple,
-                                ),
-                              ),
-                            ),
-                          // Only step 1 has a real timestamp (createdAt) —
-                          // steps 2/3 aren't stamped in the backend.
-                          if (i == 0 && widget.createdAt != null) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              _relativeTime(widget.createdAt!),
-                              style: TextStyle(fontSize: 10.5, color: context.textSecondary),
-                            ),
-                          ],
-                        ],
+                      SizedBox(height: 2),
+                      Text(
+                        _descriptions[index],
+                        style: TextStyle(
+                          fontSize: bodySize,
+                          color: context.textSecondary,
+                          height: 1.3,
+                        ),
                       ),
                     ],
                   ),
                 ),
-              ),
-            ],
-          ),
-        );
-      }),
+                const SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const SizedBox(height: 2),
+                    _StateChip(
+                      isDone: isDone,
+                      isActive: isActive,
+                      index: index,
+                    ),
+                    if (relativeTime != null) ...[
+                      SizedBox(height: 5),
+                      Text(
+                        relativeTime!,
+                        style: TextStyle(
+                          fontSize: bodySize - 0.5,
+                          color: context.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
             ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Step status chip — purples only.
+class _StateChip extends StatelessWidget {
+  final bool isDone;
+  final bool isActive;
+  final int index;
+
+  const _StateChip({
+    required this.isDone,
+    required this.isActive,
+    required this.index,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color bg;
+    final Color fg;
+    final String label;
+
+    if (isDone) {
+      bg = context.lilac;
+      fg = AppColors.purple;
+      label = 'Done';
+    } else if (isActive) {
+      bg = context.lilac;
+      fg = AppColors.purple;
+      label = 'Now';
+    } else {
+      bg = context.fieldFill;
+      fg = context.textSecondary;
+      label = 'Step ${index + 1}';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: fg,
         ),
-      );
-    });
+      ),
+    );
   }
 }
 
@@ -412,8 +622,6 @@ class _ArcPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     final rect = Rect.fromLTWH(1.5, 1.5, size.width - 3, size.height - 3);
-    // ~270 degrees of arc, leaving a visible gap — reads as "loading",
-    // not a filled progress bar (since we have no real progress %).
     canvas.drawArc(rect, -1.57, 4.2, false, paint);
   }
 
