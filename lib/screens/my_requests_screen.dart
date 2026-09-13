@@ -139,12 +139,12 @@ class _MyRequestsScreenState extends State<MyRequestsScreen>
                       elevation: 0,
                       color: context.card,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(24),
                         side: BorderSide(color: context.border),
                       ),
                       child: ListTile(
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(24),
                         ),
                         contentPadding:
                             const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
