@@ -39,13 +39,15 @@ class FloatingNavBar extends StatelessWidget {
         decoration: BoxDecoration(
           color: context.card,
           borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: context.isDark ? 0.35 : 0.10),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
+          boxShadow: context.isDark
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.10),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
