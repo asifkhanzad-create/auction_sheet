@@ -134,15 +134,31 @@ class _MyRequestsScreenState extends State<MyRequestsScreen>
                     final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
                     final isCompleted = status == 'completed';
 
-                    return Card(
+                    return Container(
                       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      elevation: 0,
-                      color: context.card,
-                      shape: RoundedRectangleBorder(
+                      decoration: BoxDecoration(
+                        color: context.card,
                         borderRadius: BorderRadius.circular(24),
-                        side: BorderSide(color: context.border),
+                        border: context.isDark
+                            ? Border.all(color: context.border)
+                            : null,
+                        boxShadow: context.isDark
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                       ),
-                      child: ListTile(
+                      child: Card(
+                        elevation: 0,
+                        color: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: ListTile(
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
                         ),
@@ -199,7 +215,8 @@ class _MyRequestsScreenState extends State<MyRequestsScreen>
                           );
                         },
                       ),
-                    );
+                    ),
+                  );
                   },
                 );
               },
