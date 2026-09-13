@@ -370,7 +370,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         SizedBox(height: spec.tilePadding * 0.2),
                         Container(
-                          padding: EdgeInsets.symmetric(
+                          padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.18),
@@ -381,7 +381,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             children: [
                               Icon(accountIcon,
                                   color: Colors.white, size: 12),
-                              SizedBox(width: 5),
+                              const SizedBox(width: 5),
                               Text(
                                 accountLabel,
                                 style: TextStyle(

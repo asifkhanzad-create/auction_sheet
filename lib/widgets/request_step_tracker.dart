@@ -256,7 +256,7 @@ class _RequestStepTrackerState extends State<RequestStepTracker>
                       ],
                     ),
                   ),
-                SizedBox(height: 6),
+                const SizedBox(height: 6),
                 Text(
                   _titles[active],
                   style: TextStyle(
@@ -266,7 +266,7 @@ class _RequestStepTrackerState extends State<RequestStepTracker>
                     height: 1.2,
                   ),
                 ),
-                SizedBox(height: 3),
+                const SizedBox(height: 3),
                 Text(
                   _heroSubtext,
                   style: TextStyle(
@@ -276,7 +276,7 @@ class _RequestStepTrackerState extends State<RequestStepTracker>
                   ),
                 ),
                 if (!isCompleted) ...[
-                  SizedBox(height: 2),
+                  const SizedBox(height: 2),
                   Text(
                     '10–30 minutes',
                     style: TextStyle(
@@ -518,7 +518,7 @@ class _StepRow extends StatelessWidget {
                           height: 1.2,
                         ),
                       ),
-                      SizedBox(height: 2),
+                      const SizedBox(height: 2),
                       Text(
                         _descriptions[index],
                         style: TextStyle(
@@ -541,7 +541,7 @@ class _StepRow extends StatelessWidget {
                       index: index,
                     ),
                     if (relativeTime != null) ...[
-                      SizedBox(height: 5),
+                      const SizedBox(height: 5),
                       Text(
                         relativeTime!,
                         style: TextStyle(
