@@ -67,26 +67,32 @@ class _RequestStepTrackerState extends State<RequestStepTracker>
 
   ({
     double heroHeight,
+    double heroArtSize,
+    double heroRingSize,
+    double heroTitleSize,
+    double heroSubtextSize,
+    double heroChipHeight,
+    double heroIconSize,
     double gap,
     double tilePadding,
-    double titleSize,
     double stepTitleSize,
     double bodySize,
-    double iconSize,
     double stepIconSize,
-    double chipHeight,
     double stepItemHeight,
   }) _specFor(double viewportHeight) {
     return (
       heroHeight: _scale(viewportHeight, 86, 140),
+      heroArtSize: _scale(viewportHeight, 92, 148),
+      heroRingSize: _scale(viewportHeight, 36, 48),
+      heroTitleSize: _scale(viewportHeight, 13.5, 16.5),
+      heroSubtextSize: _scale(viewportHeight, 10, 11.5),
+      heroChipHeight: _scale(viewportHeight, 16, 20),
+      heroIconSize: _scale(viewportHeight, 14, 18),
       gap: _scale(viewportHeight, 10, 14),
       tilePadding: _scale(viewportHeight, 12, 16),
-      titleSize: _scale(viewportHeight, 15, 19),
       stepTitleSize: _scale(viewportHeight, 13, 14.5),
       bodySize: _scale(viewportHeight, 11, 12.5),
-      iconSize: _scale(viewportHeight, 20, 26),
       stepIconSize: _scale(viewportHeight, 18, 22),
-      chipHeight: _scale(viewportHeight, 20, 26),
       stepItemHeight: _scale(viewportHeight, 52, 64),
     );
   }
@@ -198,9 +204,11 @@ class _RequestStepTrackerState extends State<RequestStepTracker>
 
   // -------- Tile 1: Hero gradient --------------------------------------
   Widget _heroTile(spec, int active, bool isCompleted) {
+    final artSize = spec.heroArtSize;
+    final artTop = (spec.heroHeight - artSize) / 2;
+
     return Container(
       height: spec.heroHeight,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
@@ -216,87 +224,130 @@ class _RequestStepTrackerState extends State<RequestStepTracker>
           ),
         ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (!isCompleted)
-                  Container(
-                    height: spec.chipHeight,
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(_tileRadius),
+        child: Stack(
+          children: [
+            // Left-side PNG art — mirrors the profile hero's placement:
+            // bleeding off the edge and clipped by the rounded card so the
+            // text stays legible on the right. Full opacity for prominence.
+            Positioned(
+              left: -artSize * 0.06,
+              top: artTop,
+              child: SizedBox(
+                width: artSize,
+                height: artSize,
+                child: Image.asset(
+                  'assets/images/auction_logo.png',
+                  fit: BoxFit.contain,
+                  excludeFromSemantics: true,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Reserved gap so the right-side text clears the art.
+                  SizedBox(width: artSize * 0.84),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        const Text(
-                          'LIVE',
+                        Text(
+                          _titles[active],
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 10,
+                            fontSize: spec.heroTitleSize,
                             fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
+                            height: 1.2,
                           ),
                         ),
+                        const SizedBox(height: 3),
+                        Text(
+                          _heroSubtext,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.88),
+                            fontSize: spec.heroSubtextSize,
+                            height: 1.3,
+                          ),
+                        ),
+                        if (!isCompleted) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            '10–30 minutes',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.62),
+                              fontSize: spec.heroSubtextSize - 1,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
-                const SizedBox(height: 6),
-                Text(
-                  _titles[active],
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: spec.titleSize,
-                    fontWeight: FontWeight.w700,
-                    height: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  _heroSubtext,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.88),
-                    fontSize: spec.bodySize,
-                    height: 1.3,
-                  ),
-                ),
-                if (!isCompleted) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    '10–30 minutes',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.62),
-                      fontSize: spec.bodySize - 1,
-                    ),
+                  const SizedBox(width: 6),
+                  // LIVE badge sits above the status ring on the far right,
+                  // freeing the vertical space the text column used to
+                  // spend on it (which overflowed on the live states).
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      if (!isCompleted) ...[
+                        Container(
+                          height: spec.heroChipHeight,
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              const Text(
+                                'LIVE',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                      ],
+                      _heroRing(
+                        isCompleted,
+                        spec.heroIconSize,
+                        spec.heroRingSize,
+                      ),
+                    ],
                   ),
                 ],
-              ],
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          _heroRing(isCompleted, spec.iconSize),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _heroRing(bool isCompleted, double iconSize) {
-    const box = 60.0;
+  Widget _heroRing(bool isCompleted, double iconSize, double box) {
     return SizedBox(
       width: box,
       height: box,
@@ -313,7 +364,7 @@ class _RequestStepTrackerState extends State<RequestStepTracker>
                 );
               },
               child: CustomPaint(
-                size: const Size(box, box),
+                size: Size(box, box),
                 painter: _ArcPainter(),
               ),
             ),
