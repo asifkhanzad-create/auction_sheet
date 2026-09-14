@@ -200,8 +200,8 @@ class _NewRequestScreenState extends State<NewRequestScreen> {
                 ? const ClampingScrollPhysics()
                 : const NeverScrollableScrollPhysics(),
             padding: EdgeInsets.only(
-              left: 28,
-              right: 28,
+              left: 12,
+              right: 12,
               top: 20,
               bottom: bottomClearance,
             ),

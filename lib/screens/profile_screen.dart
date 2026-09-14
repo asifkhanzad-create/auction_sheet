@@ -200,7 +200,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             physics: _needsScroll
                 ? const ClampingScrollPhysics()
                 : const NeverScrollableScrollPhysics(),
-            padding: EdgeInsets.fromLTRB(20, 16, 20, bottomClearance),
+            padding: EdgeInsets.fromLTRB(12, 16, 12, bottomClearance),
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 560),
