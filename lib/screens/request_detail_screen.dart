@@ -84,7 +84,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
 
                 return Container(
                   color: context.bg,
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                  padding: const EdgeInsets.fromLTRB(12, 16, 12, 4),
                   child: Column(
                     children: [
                       RequestStepTracker(
